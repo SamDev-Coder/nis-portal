@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Immigration Admin Dashboard</title>
+<style>
+  /* BODY & CONTAINER */
+  body {
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    background-color: #e0f7fa;
+    margin: 0;
+    padding: 0;
+  }
+
+  h1 {
+    text-align: center;
+    padding: 20px;
+    background-color: #00796b;
+    color: white;
+    margin: 0;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th, td {
+    padding: 12px;
+    border: 1px solid #ddd;
+    text-align: center;
+    font-size: 14px;
+  }
+
+  th {
+    background-color: #00796b;
+    color: white;
+  }
+
+  button {
+    padding: 5px 10px;
+    margin: 2px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  .approve { background: #4caf50; color: #fff; }
+  .reject { background: #f44336; color: #fff; }
+  .delete { background: #9e9e9e; color: #fff; }
+
+  .pending { color: orange; font-weight: bold; }
+  .approved { color: green; font-weight: bold; }
+  .rejected { color: red; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h1>Immigration Admin Dashboard</h1>
+
+<div class="container">
+  <table>
+    <thead>
+      <tr>
+        <th>Full Name</th>
+        <th>Replacement No</th>
+        <th>NIN</th>
+        <th>State</th>
+        <th>LGA</th>
+        <th>Next of Kin</th>
+        <th>Email</th>
+        <th>Address</th>
+        <th>Qualification</th>
+        <th>Marital Status</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="adminData"></tbody>
+  </table>
+</div>
+
+<!-- Firebase + JS -->
+<script type="module">
+  // ===== Firebase Initialization =====
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyB9YWjRJgRSfV7vBHphSv7J91aTj7fqf_k",
+    authDomain: "immigration-service-3c678.firebaseapp.com",
+    projectId: "immigration-service-3c678",
+    storageBucket: "immigration-service-3c678.firebasestorage.app",
+    messagingSenderId: "389923817622",
+    appId: "1:389923817622:web:21d4137eb01428db33dab7"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const collectionRef = collection(db, "immigration_applications");
+
+  // ===== Load Admin Table =====
+  async function loadAdminTable() {
+    const snapshot = await getDocs(collectionRef);
+    const tbody = document.getElementById("adminData");
+    tbody.innerHTML = "";
+
+    if(snapshot.empty){
+      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;">No submissions yet.</td></tr>`;
+      return;
+    }
+
+    snapshot.forEach(docSnap => {
+      const v = docSnap.data();
+      tbody.innerHTML += `
+        <tr>
+          <td>${v.fullname}</td>
+          <td>${v.passportNo}</td>
+          <td>${v.nin}</td>
+          <td>${v.state}</td>
+          <td>${v.lga}</td>
+          <td>${v.nextOfKin}</td>
+          <td>${v.email}</td>
+          <td>${v.address}</td>
+          <td>${v.qualification}</td>
+          <td>${v.maritalStatus}</td>
+          <td class="${v.status.toLowerCase()}">${v.status}</td>
+          <td>
+            <button class="approve" onclick="updateStatus('${docSnap.id}', 'Approved')">Approve</button>
+            <button class="reject" onclick="updateStatus('${docSnap.id}', 'Rejected')">Reject</button>
+            <button class="delete" onclick="deleteVolunteer('${docSnap.id}')">Delete</button>
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  // ===== Update Status =====
+  window.updateStatus = async function(id, status){
+    const docRef = doc(db, "immigration_applications", id);
+    await updateDoc(docRef, { status });
+    loadAdminTable();
+  }
+
+  // ===== Delete Volunteer =====
+  window.deleteVolunteer = async function(id){
+    if(!confirm("Are you sure you want to delete this record?")) return;
+    const docRef = doc(db, "immigration_applications", id);
+    await deleteDoc(docRef);
+    loadAdminTable();
+  }
+
+  // ===== Initialize Table =====
+  loadAdminTable();
+</script>
+
+</body>
+</html>
